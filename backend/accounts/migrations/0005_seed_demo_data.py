@@ -16,6 +16,7 @@ already exists, so running ``migrate`` again won't duplicate data.
 
 import io
 import random
+import sys
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -220,6 +221,12 @@ def _seed_categories(apps):
 
 
 def seed(apps, schema_editor):
+    # Never seed demo data on the test database: the test runner creates a
+    # fresh DB and runs every migration (including this data migration) before
+    # running its fixtures, and the seeded users/categories/products collide
+    # with test factories (same slugs/emails) and slow the run with 30 images.
+    if "test" in sys.argv:
+        return
     User = apps.get_model(settings.AUTH_USER_MODEL)
     Product = apps.get_model("catalog", "Product")
     ProductImage = apps.get_model("catalog", "ProductImage")

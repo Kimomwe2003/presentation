@@ -19,10 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- Environment ----------------------------------------------------------
 # Read .env (never committed). Values are overridden by real environment
 # variables when both exist.
-env = environ.Env(
-    DEBUG=(bool, False),
-    ALLOWED_HOSTS=(list, ["10.15.214.111","192.168.1.132"]),
-)
+# Allow all hosts (development/demo). Not read from .env so it never depends
+# on deployment-specific configuration; on Render the load balancer hostname is
+# covered too. Narrow this down (e.g. to your domain) for a hard production.
+ALLOWED_HOSTS = ["*"]
 
 environ.Env.read_env(BASE_DIR / ".env")
 

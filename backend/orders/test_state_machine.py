@@ -105,6 +105,37 @@ class OrderTransitionTests(LifecycleBase):
         response = self._act(self.admin, f"{ORDERS_URL}{self.order.pk}/mark-paid/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_mark_paid_credits_seller_wallet_and_marks_product_sold(self):
+        from catalog.models import Product
+        from wallet.models import Wallet
+        from wallet.services import PLATFORM_FEE_RATE
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, Product.Status.ACTIVE)
+        wallet, _ = Wallet.objects.get_or_create(user=self.seller)
+        self.assertEqual(wallet.balance, Decimal("0.00"))
+
+        self._mark_paid()
+
+        # Seller's wallet is credited net of the 6% platform fee at sale time.
+        wallet.refresh_from_db()
+        expected = Decimal("50.00") * (Decimal("1") - PLATFORM_FEE_RATE)
+        self.assertEqual(wallet.balance, expected.quantize(Decimal("0.01")))
+
+        # The product is now SOLD — no longer for sale.
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, Product.Status.SOLD)
+
+    def test_sold_product_hidden_from_admin_listing(self):
+        auth(self.client, self.admin)
+        response = self.client.get("/api/products/")
+        self.assertTrue(any(p["id"] == self.product.pk for p in response.data["results"]))
+
+        self._mark_paid()
+
+        response = self.client.get("/api/products/")
+        self.assertFalse(any(p["id"] == self.product.pk for p in response.data["results"]))
+
     # -- Order-level: admin refund ------------------------------------------
 
     def test_admin_can_refund_paid_order(self):
