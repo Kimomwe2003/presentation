@@ -1,0 +1,88 @@
+# Render Blueprint — ReuseHub backend
+#
+# Deploy the backend on Render with one click (or `render blueprint launch`)
+# from the repo root:
+#
+#   render blueprint launch
+#
+# This provisions a single Web Service running Django + gunicorn with SQLite.
+#
+# SQLite on Render: the free (and even paid) instance filesystem is EPHEMERAL
+# and is reset on every redeploy. To keep the SQLite database and uploaded
+# images across redeploys, a persistent disk is mounted at
+# /opt/render/project/src/data, and both the SQLite file and MEDIA_ROOT live
+# there. Without a disk, data is wiped on each deploy.
+#
+# After launch, set real (secret) env vars in the dashboard — see
+# backend/.env.render.example and docs/RENDER_DEPLOYMENT.md.
+
+services:
+  - type: web
+    name: reusehub-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "./render-build.sh"
+    startCommand: "./render-start.sh"
+    healthCheckPath: /admin/login/
+
+    # Persistent disk holds the SQLite DB (backend/data/db.sqlite3) and uploaded
+    # media (backend/data/media). Survives redeploys.
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: USE_SQLITE
+        value: "true"
+      # Keep the SQLite DB on the persistent disk so it survives redeploys.
+      - key: SQLITE_DB_PATH
+        value: /opt/render/project/src/data/db.sqlite3
+      # Uploaded media also on the persistent disk.
+      - key: MEDIA_ROOT
+        value: /opt/render/project/src/data/media
+      - key: DEBUG
+        value: "false"
+      - key: ALLOW_DEV
+        value: "false"
+      - key: SECURE_HTTP
+        value: "true"
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "false"
+      # Comma-separated list of allowed browser origins (the mobile/web app URLs).
+      # Example: https://your-app.expo.dev, https://your-web-app.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Public hostname where ClickPesa sends webhooks — set to
+      # https://reusehub-backend.onrender.com (the exact service URL).
+      - key: CLICKPESA_WEBHOOK_BASE_URL
+        sync: false
+      - key: NGROK_PUBLIC_URL
+        sync: false
+      # Secrets — set these manually in the Render dashboard (never commit).
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: CLICKPESA_CLIENT_ID
+        sync: false
+      - key: CLICKPESA_API_KEY
+        sync: false
+      - key: CLICKPESA_CHECKSUM_SECRET
+        sync: false
+      - key: CLICKPESA_WEBHOOK_SECRET
+        sync: false
+      - key: CLICKPESA_PAYOUTS_ENABLED
+        value: "false"
+      - key: CLICKPESA_CURRENCY
+        value: TZS
+      - key: CLICKPESA_TIMEOUT
+        value: "45"
+      - key: TIME_ZONE
+        value: Africa/Dar_es_Salaam
+
+# No managed PostgreSQL: the free tier uses SQLite. Remove/ignore the
+# "databases:" section entirely.

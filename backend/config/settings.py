@@ -118,18 +118,29 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Database ---------------------------------------------------------------
-# PostgreSQL only. Local defaults (reusehub/reusehub@localhost/reusehub) live
-# in .env.example; production values must come from the deployment environment.
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", default="reusehub"),
-        "USER": env("POSTGRES_USER", default="reusehub"),
-        "PASSWORD": env("POSTGRES_PASSWORD", default="1234"),
-        "HOST": env("POSTGRES_HOST", default="localhost"),
-        "PORT": env("POSTGRES_PORT", default="5432"),
+# SQLite is the default so the project runs anywhere with zero external
+# services (including a free Render deploy). PostgreSQL can still be used by
+# setting USE_SQLITE=False and providing the POSTGRES_* variables.
+if env.bool("USE_SQLITE", default=True):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            # Optional env override lets a managed host (e.g. Render) place the
+            # DB on a persistent disk; defaults to ./backend/db.sqlite3.
+            "NAME": env("SQLITE_DB_PATH", default=str(BASE_DIR / "db.sqlite3")),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", default="reusehub"),
+            "USER": env("POSTGRES_USER", default="reusehub"),
+            "PASSWORD": env("POSTGRES_PASSWORD", default="1234"),
+            "HOST": env("POSTGRES_HOST", default="localhost"),
+            "PORT": env("POSTGRES_PORT", default="5432"),
+        }
+    }
 
 # --- Authentication / JWT ----------------------------------------------------
 REST_FRAMEWORK = {
