@@ -8,6 +8,10 @@
 # gateway has time to respond without gunicorn killing the worker.
 set -euo pipefail
 
+# Ensure the persistent data directory exists (SQLite DB + media live there).
+# The disk mount starts empty, so create it before migrate tries to write.
+mkdir -p "${MEDIA_ROOT:-./media}" "$(dirname "${SQLITE_DB_PATH:-./db.sqlite3}")"
+
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput --clear
 exec gunicorn config.wsgi:application \
