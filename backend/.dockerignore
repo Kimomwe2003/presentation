@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.env
+staticfiles/
+media/
+db.sqlite3
+*.sqlite3
+.git/
+.gitignore
+Dockerfile
+README.md

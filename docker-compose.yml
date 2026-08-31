@@ -1,0 +1,61 @@
+# ReuseHub — full-stack deployment for a final-year demonstration.
+# Start with:  docker compose up --build
+# Backend exposes port 8000; PostgreSQL runs as a sibling service.
+#
+# Secrets come from a root-level .env (see docs/DEPLOYMENT.md); never commit it.
+# The mobile app is NOT containerised (it builds to a native APK/IPA) — see
+# docs/DEPLOYMENT.md and the EAS build section of the README.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reusehub}
+      POSTGRES_USER: ${POSTGRES_USER:-reusehub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-reusehub} -d ${POSTGRES_DB:-reusehub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Hardened headers/redirects active behind TLS out of the box.
+      SECURE_HTTP: ${SECURE_HTTP:-True}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-reusehub}
+      POSTGRES_USER: ${POSTGRES_USER:-reusehub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      CORS_ALLOW_ALL_ORIGINS: ${CORS_ALLOW_ALL_ORIGINS:-False}
+      JWT_ACCESS_TOKEN_LIFETIME_DAYS: ${JWT_ACCESS_TOKEN_LIFETIME_DAYS:-1}
+      JWT_REFRESH_TOKEN_LIFETIME_DAYS: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-7}
+      CLICKPESA_BASE_URL: ${CLICKPESA_BASE_URL:-https://api.clickpesa.com/third-parties}
+      CLICKPESA_CLIENT_ID: ${CLICKPESA_CLIENT_ID:-}
+      CLICKPESA_API_KEY: ${CLICKPESA_API_KEY:-}
+      CLICKPESA_WEBHOOK_SECRET: ${CLICKPESA_WEBHOOK_SECRET:-}
+      CLICKPESA_CURRENCY: ${CLICKPESA_CURRENCY:-TZS}
+      TIME_ZONE: ${TIME_ZONE:-UTC}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Wet-mount media so uploads survive backend rebuilds/restarts.
+      - media:/app/media
+
+volumes:
+  pgdata:
+  media:

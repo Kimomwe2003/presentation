@@ -1,0 +1,45 @@
+"""Django admin for AuditLog — read-only.
+
+Staff can browse entries; no add/change/delete actions are exposed here either
+(they are possible for a superuser only via the raw ORM/DB, which is the
+standard Django escape hatch and intentionally left intact).
+"""
+
+from django.contrib import admin
+
+from .models import AuditLog
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "action",
+        "actor",
+        "target_model",
+        "target_id",
+        "ip_address",
+    )
+    list_filter = ("action", "target_model")
+    search_fields = ("actor__email", "description", "target_model")
+    readonly_fields = [
+        "actor",
+        "action",
+        "target_model",
+        "target_id",
+        "description",
+        "ip_address",
+        "before_data",
+        "after_data",
+        "created_at",
+    ]
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
