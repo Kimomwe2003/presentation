@@ -75,9 +75,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         # Seller inbox ("My Listings"): seller sees all their own items regardless of status.
         if seller_param and user.is_authenticated and str(user.id) == str(seller_param):
             queryset = queryset.filter(seller=user)
-        # Admin staff view
+        # Admin staff view: every non-sold listing is manageable, but a sold
+        # product must disappear from the browseable listing too (it is no
+        # longer for sale). INACTIVE = soft-deleted items are hidden as well.
         elif user.is_authenticated and (user.is_staff or user.is_superuser):
-            pass
+            queryset = queryset.exclude(
+                Q(status=Product.Status.SOLD) | Q(status=Product.Status.INACTIVE)
+            )
         else:
             # Public marketplace feed: STRICTLY ACTIVE PRODUCTS ONLY
             queryset = queryset.filter(status=Product.Status.ACTIVE)

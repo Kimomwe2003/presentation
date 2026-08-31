@@ -83,12 +83,20 @@ def transition_order(order: Order, action: str, user=None, *, actor=None, reques
         elif action == ACTION_MARK_PAID:
             from cart.models import CartItem
             from catalog.models import Product
+            from wallet.services import WalletService
 
             for item in order.items.select_related("product"):
+                # Take the product out of every browseable listing the moment
+                # it is paid for (sold), and drop it from any carts.
                 if item.product:
                     item.product.status = Product.Status.SOLD
                     item.product.save(update_fields=["status", "updated_at"])
                     CartItem.objects.filter(product=item.product).delete()
+                # Credit the seller's wallet net of the platform fee as soon as
+                # the sale is confirmed by payment. Idempotent (the
+                # (order_item, type) ledger constraint) so re-processing is a
+                # no-op and the later COMPLETED transition safely short-circuits.
+                WalletService.process_completed_sale(item)
         order.save(update_fields=["status", "updated_at"])
     from auditlog.services import AuditLogService
 

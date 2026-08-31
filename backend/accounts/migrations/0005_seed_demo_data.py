@@ -205,6 +205,8 @@ def _ensure_user(apps, email, password, is_staff=False, is_superuser=False, full
     Profile.objects.get_or_create(
         user=user, defaults={"full_name": full_name, "role": "ADMIN" if is_superuser else "BUYER"}
     )
+    Wallet = apps.get_model("wallet", "Wallet")
+    Wallet.objects.get_or_create(user=user)
     return user
 
 
@@ -274,6 +276,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("accounts", "0004_passwordresetcode"),
         ("catalog", "0002_alter_productimage_image"),
+        ("wallet", "0001_initial"),
     ]
 
     operations = [
