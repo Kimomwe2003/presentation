@@ -83,11 +83,12 @@ export function resolveImageUrl(url: string | null | undefined): string | null {
     if (trimmed.includes('ngrok-free.dev') || trimmed.includes('ngrok-free.app')) {
       return trimmed.replace('http://', 'https://');
     }
-    if (apiHost && (trimmed.includes('localhost') || trimmed.includes('127.0.0.1') || trimmed.includes('192.168.'))) {
+    if (apiHost && (trimmed.includes('localhost') || trimmed.includes('127.0.0.1') || trimmed.includes('192.168.') || trimmed.includes('172.20.') || trimmed.includes('172.') || trimmed.includes('10.'))) {
       const pathIndex = trimmed.indexOf('/media/');
       if (pathIndex !== -1) {
         return `${apiHost}${trimmed.substring(pathIndex)}`;
       }
+      return trimmed;
     }
     return trimmed.replace('http://', 'https://');
   }

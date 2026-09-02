@@ -8,7 +8,6 @@ All secrets and environment-specific values come from environment variables
 """
 
 from datetime import timedelta
-import os
 from pathlib import Path
 
 import environ
@@ -19,30 +18,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- Environment ----------------------------------------------------------
 # Read .env (never committed). Values are overridden by real environment
 # variables when both exist.
-# Allow all hosts (development/demo). Not read from .env so it never depends
-# on deployment-specific configuration; on Render the load balancer hostname is
-# covered too. Narrow this down (e.g. to your domain) for a hard production.
-ALLOWED_HOSTS = ["*"]
+env = environ.Env(
+    DEBUG=(bool, False),
+)
 
 environ.Env.read_env(BASE_DIR / ".env")
 
 # --- Django core ----------------------------------------------------------
 
+# Allow all hosts (development/demo). Not read from .env so it never depends
+# on deployment-specific configuration; on Render the load balancer hostname is
+# covered too. Narrow this down (e.g. to your domain) for a hard production.
+ALLOWED_HOSTS = ["*"]
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("DJANGO_SECRET_KEY")
+SECRET_KEY = "generate_secret_key_and_change_me_if_you_dont_love_sultan"
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG defaults to False and is only True when explicitly set in .env / env.
 DEBUG = env("DEBUG")
-
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
-
-# On Render, the load balancer routes to the service's public hostname
-# (service.onrender.com) while ALLOWED_HOSTS in a render blueprint may not
-# know it at deploy time. Auto-append Render's injected hostname when present.
-_RENDER_HOST = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-if _RENDER_HOST and _RENDER_HOST not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _RENDER_HOST]
 
 # Fail-fast guard: refuse to run with debug on unless the environment
 # explicitly allows it. This stops a stray DEBUG=True in a live deployment.
