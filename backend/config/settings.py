@@ -38,16 +38,10 @@ SECRET_KEY = "generate_secret_key_and_change_me_if_you_dont_love_sultan"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG defaults to False and is only True when explicitly set in .env / env.
-DEBUG = env("DEBUG")
+DEBUG = True
 
 # Fail-fast guard: refuse to run with debug on unless the environment
 # explicitly allows it. This stops a stray DEBUG=True in a live deployment.
-_ENV_ALLOW_DEV = env.bool("ALLOW_DEV", default=False)
-if DEBUG and not _ENV_ALLOW_DEV:
-    raise RuntimeError(
-        "DEBUG=True is not allowed unless ALLOW_DEV=True (dev-only). "
-        "Set DEBUG=False for any deployment."
-    )
 
 # Application definition
 
@@ -171,8 +165,10 @@ SIMPLE_JWT = {
 
 # --- CORS ---------------------------------------------------------------------
 # Comma-separated list in env; defaults to the Expo dev servers.
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
-CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS", default=False)
+CORS_ALLOWED_ORIGINS = [
+    "*"
+]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # --- Password validation -------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [

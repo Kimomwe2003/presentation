@@ -16,7 +16,7 @@ import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from './tokenStorage';
 import type { RefreshResponse } from './types';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://presentation-g4mh.onrender.com/api';
+const API_URL ='https://presentation-g4mh.onrender.com/api';
 
 const AUTH_ENDPOINTS = [
   '/auth/login/',
