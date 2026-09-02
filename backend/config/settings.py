@@ -165,9 +165,7 @@ SIMPLE_JWT = {
 
 # --- CORS ---------------------------------------------------------------------
 # Comma-separated list in env; defaults to the Expo dev servers.
-CORS_ALLOWED_ORIGINS = [
-    "*"
-]
+CORS_ALLOWED_ORIGINS = []
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- Password validation -------------------------------------------------------
