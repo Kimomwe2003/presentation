@@ -214,19 +214,8 @@ MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 # --- Security hardening --------------------------------------------------------
 # Secure headers / redirects are gated behind SECURE_HTTP=True so local dev
 # (http://localhost) keeps working. Enable for any TLS-terminated deployment.
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-if env.bool("SECURE_HTTP", default=False):
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REFERRER_POLICY = "same-origin"
-    X_FRAME_OPTIONS = "DENY"
+
 
 # --- Payments / ClickPesa ----------------------------------------------------
 # Credentials are read from the environment only and are never sent to clients.
