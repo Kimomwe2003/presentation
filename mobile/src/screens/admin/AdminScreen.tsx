@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { fetchAdminDashboard } from '../../api/admin';
 import type { AdminDashboard } from '../../api/types';
@@ -16,23 +17,39 @@ export default function AdminScreen({ navigation }: Props) {
   const [data, setData] = useState<AdminDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const hasLoaded = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const dashboard = await fetchAdminDashboard();
-        if (!cancelled) setData(dashboard);
-      } catch {
-        if (!cancelled) setError('Could not load the dashboard.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async (mode: 'initial' | 'refresh') => {
+    if (mode === 'refresh') setRefreshing(true);
+    try {
+      const dashboard = await fetchAdminDashboard();
+      setData(dashboard);
+      setError(null);
+    } catch {
+      if (!hasLoaded.current) setError('Could not load the dashboard.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  // Reload on every focus so earnings/stats stay fresh.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        await Promise.resolve();
+        if (active) {
+          await load(hasLoaded.current ? 'refresh' : 'initial');
+          hasLoaded.current = true;
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [load]),
+  );
 
   if (loading) {
     return (
@@ -46,13 +63,17 @@ export default function AdminScreen({ navigation }: Props) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error ?? 'Nothing to show.'}</Text>
-        <Button title="Retry" onPress={() => setLoading(true)} />
+        <Button title="Retry" onPress={() => void load('initial')} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load('refresh')} />}
+    >
       <Text style={styles.subtitle}>Signed in as {user?.email} — administrator</Text>
 
       <View style={styles.grid}>
