@@ -287,12 +287,13 @@ def _notify_payment(payment: Payment, outcome: str) -> None:
     polls (it is delivered via the notifications endpoint alongside the payment
     status endpoint).
     """
+    from notifications.models import Notification
     from notifications.services import NotificationService
 
     buyer = getattr(payment.order, "buyer", None)
     if buyer is None:
         return
-    note_type = "PAYMENT_RESULT"
+    note_type = Notification.Type.PAYMENT_RESULT
     if outcome == Payment.Status.SUCCESSFUL:
         title = "Payment successful"
         body = f"Your payment for order {payment.order.order_number} was received."
@@ -440,7 +441,6 @@ def handle_webhook(payload: dict) -> None:
                 )
             )
             _mark_paid_if_possible(payment.order)
-            _notify_payment(payment, Payment.Status.SUCCESSFUL)
             _audit_payment_event(payment, AuditLogService.Action.PAYMENT_SUCCESS)
         elif logic_status == Payment.Status.FAILED:
             payment.status = Payment.Status.FAILED

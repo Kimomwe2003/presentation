@@ -199,6 +199,19 @@ def _notify_order_change(order: Order, action: str) -> None:
         related_object=order,
     )
 
+    if action == ACTION_MARK_PAID:
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        for seller in User.objects.filter(sold_items__order=order).distinct():
+            NotificationService.notify(
+                user=seller,
+                type_="payment_result",
+                title="Order paid",
+                body=f"An item you sold in order {order.order_number} has been paid for.",
+                related_object=order,
+            )
+
     if action == ACTION_REFUND:
         from django.contrib.auth import get_user_model
 
