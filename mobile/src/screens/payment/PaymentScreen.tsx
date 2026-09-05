@@ -149,7 +149,12 @@ export default function PaymentScreen({ navigation, route }: Props) {
         setShowSuccess(true);
         setTimeout(() => {
           setShowSuccess(false);
-          navigation.goBack();
+          const canGoBack = navigation.canGoBack();
+          if (canGoBack) {
+            navigation.goBack();
+          } else {
+            navigation.replace('OrderDetails', { orderId });
+          }
         }, 2500);
       } else if (next.payment?.status === 'failed' || next.payment?.status === 'expired') {
         setScreen('failed');
@@ -159,7 +164,7 @@ export default function PaymentScreen({ navigation, route }: Props) {
         setScreen('idle');
       }
     },
-    [navigation],
+    [navigation, orderId],
   );
 
   // Load existing payment state on mount
