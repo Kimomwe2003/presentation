@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
 
   // Overlay
-  overlay: { ...StyleSheet.absoluteFillObject },
+  overlay: { ...StyleSheet.absoluteFill },
   topOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

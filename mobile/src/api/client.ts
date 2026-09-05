@@ -30,7 +30,7 @@ const AUTH_ENDPOINTS = [
 // eslint-disable-next-line import/no-named-as-default-member
 export const client = axios.create({
   baseURL: API_URL,
-  timeout: 45000,
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json',
   },

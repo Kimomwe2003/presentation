@@ -5,16 +5,19 @@
 #
 #   render blueprint launch
 #
-# This provisions a single Web Service running Django + gunicorn with SQLite.
+# This provisions a single Web Service running Django + gunicorn backed by a
+# managed PostgreSQL database.
 #
-# SQLite on Render: the free (and even paid) instance filesystem is EPHEMERAL
-# and is reset on every redeploy. To keep the SQLite database and uploaded
-# images across redeploys, a persistent disk is mounted at
-# /opt/render/project/src/data, and both the SQLite file and MEDIA_ROOT live
-# there. Without a disk, data is wiped on each deploy.
+# Database: this blueprint targets the Render managed Postgres instance
+# `dpg-dae24gtbedkc73b1vq90-a` (database `reusehub`). Inside Render's network
+# the service connects with the INTERNAL host `dpg-dae24gtbedkc73b1vq90-a` via
+# SSL; outside Render (local dev) use the external host
+# `dpg-dae24gtbedkc73b1vq90-a.virginia-postgres.render.com`. The DB password is
+# NOT stored here — set it as a secret (sync: false) in the Render dashboard,
+# or set DATABASE_URL there and drop the POSTGRES_* block.
 #
-# After launch, set real (secret) env vars in the dashboard — see
-# backend/.env.render.example and docs/RENDER_DEPLOYMENT.md.
+# A persistent disk still holds uploaded MEDIA only (the database itself now
+# lives in managed Postgres, so it survives redeploys natively).
 
 services:
   - type: web
@@ -26,8 +29,8 @@ services:
     startCommand: "./render-start.sh"
     healthCheckPath: /admin/login/
 
-    # Persistent disk holds the SQLite DB (backend/data/db.sqlite3) and uploaded
-    # media (backend/data/media). Survives redeploys.
+    # Persistent disk holds uploaded media (backend/data/media). Survives
+    # redeploys. The database is managed Postgres — no disk needed for it.
     disk:
       name: data
       mountPath: /opt/render/project/src/data
@@ -38,12 +41,26 @@ services:
         value: config.settings
       - key: PYTHON_VERSION
         value: 3.12.8
+      # Use the managed Postgres (not SQLite).
       - key: USE_SQLITE
-        value: "true"
-      # Keep the SQLite DB on the persistent disk so it survives redeploys.
-      - key: SQLITE_DB_PATH
-        value: /opt/render/project/src/data/db.sqlite3
-      # Uploaded media also on the persistent disk.
+        value: "false"
+      - key: POSTGRES_DB
+        value: reusehub
+      - key: POSTGRES_USER
+        value: reusehub_user
+      # INTERNAL host — resolvable only inside Render's network.
+      - key: POSTGRES_HOST
+        value: dpg-dae24gtbedkc73b1vq90-a
+      - key: POSTGRES_PORT
+        value: "5432"
+      # Managed Postgres requires TLS.
+      - key: POSTGRES_SSLMODE
+        value: require
+      # Real password — set manually in the Render dashboard
+      # (Dashboard → reusehub-backend → Environment → POSTGRES_PASSWORD).
+      - key: POSTGRES_PASSWORD
+        sync: false
+      # Uploaded media on the persistent disk.
       - key: MEDIA_ROOT
         value: /opt/render/project/src/data/media
       - key: DEBUG
@@ -83,6 +100,3 @@ services:
         value: "45"
       - key: TIME_ZONE
         value: Africa/Dar_es_Salaam
-
-# No managed PostgreSQL: the free tier uses SQLite. Remove/ignore the
-# "databases:" section entirely.

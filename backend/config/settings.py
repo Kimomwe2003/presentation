@@ -108,10 +108,33 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Database ---------------------------------------------------------------
-# SQLite is the default so the project runs anywhere with zero external
-# services (including a free Render deploy). PostgreSQL can still be used by
-# setting USE_SQLITE=False and providing the POSTGRES_* variables.
-if env.bool("USE_SQLITE", default=True):
+# Three ways to configure, in priority order:
+#   1. DATABASE_URL  -> a full PostgreSQL URL (Render-managed Postgres injects
+#      this automatically; the internal URL is used inside Render's network and
+#      the external .virginia-postgres.render.com URL from local dev machines).
+#   2. USE_SQLITE=True -> SQLite (local dev default; zero external services).
+#   3. USE_SQLITE=False + POSTGRES_* -> explicit PostgreSQL connection.
+# POSTGRES_SSLMODE optionally adds {"sslmode": ...} to OPTIONS — required when
+# using a managed Postgres (e.g. Render) that only accepts TLS connections.
+from urllib.parse import unquote, urlsplit
+
+
+def _parse_database_url(url):
+    parsed = urlsplit(url)
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.strip("/") or "reusehub",
+        "USER": unquote(parsed.username or "reusehub"),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "localhost",
+        "PORT": parsed.port or "5432",
+    }
+
+
+_database_url = env("DATABASE_URL", default="")
+if _database_url:
+    DATABASES = {"default": _parse_database_url(_database_url)}
+elif env.bool("USE_SQLITE", default=True):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -131,6 +154,11 @@ else:
             "PORT": env("POSTGRES_PORT", default="5432"),
         }
     }
+
+_db_sslmode = env("POSTGRES_SSLMODE", default="")
+if _db_sslmode:
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["sslmode"] = _db_sslmode
 
 # --- Authentication / JWT ----------------------------------------------------
 REST_FRAMEWORK = {

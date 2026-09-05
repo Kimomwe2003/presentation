@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -29,6 +24,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "sdkVersion": "54.0.0"
+    "sdkVersion": "57.0.0",
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-secure-store",
+      "expo-status-bar"
+    ]
   }
 }
