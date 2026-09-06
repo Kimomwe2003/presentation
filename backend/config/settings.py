@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "reviews",
     "adminpanel",
     "auditlog",
+    "media_store",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -175,6 +176,9 @@ REST_FRAMEWORK = {
         "user": env("THROTTLE_USER_RATE", default="120/min"),
         # Tighter, per-endpoint scopes set on sensitive views.
         "auth_login": env("THROTTLE_AUTH_LOGIN_RATE", default="10/min"),
+        # Forgot and reset are separate scopes so each step of the flow has
+        # its own budget instead of sharing one and locking users out.
+        "auth_password_forgot": "5/min",
         "auth_password_reset": "5/min",
         "payment_initiate": env("THROTTLE_PAYMENT_INITIATE_RATE", default="60/min"),
     },
@@ -234,10 +238,22 @@ MEDIA_URL = "media/"
 # point it at a persistent disk. Defaults to ./backend/media for local dev.
 MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
-# Uploaded product images go to local disk (MEDIA_ROOT) — the simplest realistic
-# option for a final-year deployment. In production, serve MEDIA_ROOT from the
-# same host (Nginx/gunicorn) or move to object storage when outgrowing the box.
-# See docs/DEPLOYMENT.md.
+# Django 4.2+ uses STORAGES to resolve default_storage. The database-backed
+# storage keeps every upload in a Postgres table (write-through) so images
+# survive redeploys and database restores — the root cause of missing product
+# and profile pictures. Set via STORAGES so django.core.files.storage resolves
+# the custom class; override via env STORAGES_DEFAULT_BACKEND if needed.
+STORAGES = {
+    "default": {
+        "BACKEND": env(
+            "STORAGES_DEFAULT_BACKEND",
+            default="media_store.storage.DbBackedStorage",
+        ),
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # --- Security hardening --------------------------------------------------------
 # Secure headers / redirects are gated behind SECURE_HTTP=True so local dev
