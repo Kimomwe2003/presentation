@@ -31,8 +31,7 @@ def serve_media_file(request, path):
     try:
         fs_path = os.path.join(str(default_storage.location), name)
         if os.path.isfile(fs_path) and os.path.getsize(fs_path):
-            with open(fs_path, "rb") as fh:
-                return FileResponse(fh, content_type=content_type)
+            return FileResponse(open(fs_path, "rb"), content_type=content_type)
     except (OSError, ValueError):
         pass
 
