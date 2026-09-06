@@ -55,6 +55,13 @@ class CartItemSerializer(serializers.ModelSerializer):
             product = Product.objects.filter(pk=product_id).first()
             if product is None or product.status != Product.Status.ACTIVE:
                 raise serializers.ValidationError({"product_id": "Product not available."})
+
+            request = self.context.get("request")
+            user = request.user if request else None
+            if user and user.is_authenticated and product.seller_id == user.pk:
+                raise serializers.ValidationError(
+                    {"product_id": "You cannot buy your own product."}
+                )
         return attrs
 
 

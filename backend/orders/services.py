@@ -30,6 +30,12 @@ def create_order_from_cart(
         from rest_framework.exceptions import ValidationError
 
         raise ValidationError({"detail": "Cannot create an order from an empty cart."})
+    if user.is_authenticated and any(
+        item.product.seller_id == user.pk for item in items
+    ):
+        from rest_framework.exceptions import ValidationError
+
+        raise ValidationError({"detail": "You cannot buy your own products."})
     subtotal = sum(item.line_total for item in items)
 
     with transaction.atomic():

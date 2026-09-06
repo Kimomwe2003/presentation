@@ -17,6 +17,7 @@ import ImageCarousel from '../../components/ImageCarousel';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import RatingStars from '../../components/RatingStars';
 import ReviewItem from '../../components/ReviewItem';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -26,6 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetails'>;
 
 export default function ProductDetailsScreen({ route, navigation }: Props) {
   const { productId } = route.params;
+  const { user } = useAuth();
   const { showToast } = useToast();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
@@ -90,6 +92,8 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
       setAddingToCart(false);
     }
   }, [product, showToast]);
+
+  const isOwnListing = user != null && product?.seller.id === user.id;
 
   if (loading) {
     return <LoadingSpinner label="Loading listing…" />;
@@ -169,19 +173,27 @@ export default function ProductDetailsScreen({ route, navigation }: Props) {
         <View style={styles.favoriteWrap}>
           <FavoriteButton productId={product.id} size={26} />
         </View>
-        <Button
-          title="Add to Cart"
-          loading={addingToCart}
-          onPress={() => void handleAddToCart()}
-          style={styles.actionButton}
-        />
-        <Button
-          title="Chat"
-          variant="secondary"
-          loading={openingChat}
-          onPress={() => void handleChat()}
-          style={styles.actionButton}
-        />
+        {isOwnListing ? (
+          <View style={[styles.actionButton, styles.ownListingBadge]}>
+            <Text style={styles.ownListingText}>This is your listing</Text>
+          </View>
+        ) : (
+          <>
+            <Button
+              title="Add to Cart"
+              loading={addingToCart}
+              onPress={() => void handleAddToCart()}
+              style={styles.actionButton}
+            />
+            <Button
+              title="Chat"
+              variant="secondary"
+              loading={openingChat}
+              onPress={() => void handleChat()}
+              style={styles.actionButton}
+            />
+          </>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -316,5 +328,18 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  ownListingBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.round,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+  },
+  ownListingText: {
+    ...typography.label,
+    fontWeight: '600',
   },
 });

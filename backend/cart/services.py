@@ -38,6 +38,8 @@ def get_current_cart(request) -> Cart:
         cart = get_or_create_anonymous_cart(request)
     from catalog.models import Product
     cart.items.filter(product__status__in=[Product.Status.SOLD, Product.Status.INACTIVE]).delete()
+    if request.user.is_authenticated:
+        cart.items.filter(product__seller=request.user).delete()
     return cart
 
 
@@ -56,6 +58,8 @@ def merge_anonymous_cart_to_user(request) -> None:
     anonymous_cart = anonymous_items[0].cart
     with transaction.atomic():
         for item in anonymous_items:
+            if item.product.seller_id == request.user.pk:
+                continue
             existing = CartItem.objects.filter(
                 cart=cart,
                 product=item.product,
